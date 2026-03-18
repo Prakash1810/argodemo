@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+ name: product1-root
+ namespace: argocd
+spec:
+ project: default
+ sources:
+   - repoURL: https://github.com/Prakash1810/argodemo.git
+     targetRevision: app1
+     path: argo
+   - repoURL: https://github.com/Prakash1810/argodemo.git
+     targetRevision: app2
+     path: argo    
+ destination:
+   server: https://kubernetes.default.svc
+   namespace: argocd
+ syncPolicy:
+   automated:
+     prune: true
+     selfHeal: true
