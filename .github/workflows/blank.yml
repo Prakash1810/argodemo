@@ -3,7 +3,7 @@ name: Gitops pipeline with Argocd
 on:
   push:
     branches:
-      - main   # Trigger workflow on push to main branch
+      - appset   # Trigger workflow on push to main branch
 
 env:
   # Secrets injected as environment variables for use in steps
