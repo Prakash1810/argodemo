@@ -1,0 +1,79 @@
+name: Gitops pipeline with Argocd
+
+on:
+  push:
+    branches:
+      - main   # Trigger workflow on push to main branch
+
+env:
+  # Secrets injected as environment variables for use in steps
+  PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+  DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+  GIT_EMAIL: ${{ secrets.GIT_EMAIL }}
+  GIT_USERNAME: ${{ secrets.GIT_USERNAME }}
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest  # Use latest Ubuntu runner
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          fetch-depth: 0   # Fetch full git history for accurate tagging
+
+
+      - name: Build Docker image
+        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/my-app:${{ github.sha}} .
+        # Build Docker image tagged with commit SHA
+
+      - name: Scan Docker Image with Trivy
+        run: docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image ${{ secrets.DOCKERHUB_USERNAME }}/my-app:${{ github.sha }}
+        # Run vulnerability scan on image using Trivy
+
+      - name: Log in to DockerHub
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+        # Authenticate to DockerHub with token
+
+      - name: Push Docker image to DockerHub
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/my-app:${{ github.sha }}
+        # Push tagged Docker image to DockerHub registry
+
+  deploy:
+    needs: build    # Wait for build job to finish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          fetch-depth: 0  # Get full git history
+
+     
+      - name: Update deployment.yaml with newly built image
+        run: |
+          git config user.name "${{ secrets.GIT_USERNAME }}"
+          git config user.email "${{ secrets.GIT_EMAIL }}"
+          git fetch origin
+          git checkout main
+          git pull origin main
+          # Show current directory and deployment file content (for debugging)
+          pwd
+          cat db-test/deploy.yaml
+          # Replace image tag in deployment.yaml with new Docker image tagged by commit SHA
+          sed -i "s+${{ secrets.DOCKERHUB_USERNAME }}/my-app.*+${{ secrets.DOCKERHUB_USERNAME }}/my-app:${{ github.sha }}+g" manifest/deployment.yaml
+          cat db-test/deploy.yaml
+        # Updates Kubernetes manifest to use the new image
+
+      - name: Commit and Push Updated deployment.yaml
+        run: |
+          git config user.name "${{ secrets.GIT_USERNAME }}"
+          git config user.email "${{ secrets.GIT_EMAIL }}"
+          git remote set-url origin https://$GIT_USERNAME:$PERSONAL_ACCESS_TOKEN@github.com/${{ github.repository }}.git
+          git fetch origin
+          git checkout main
+          git pull origin main
+          git add .
+          git commit -m "Update image to my-app:${{ github.sha }}"
+          git push origin main
