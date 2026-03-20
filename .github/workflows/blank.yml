@@ -62,7 +62,7 @@ jobs:
           pwd
           cat db-test/deploy.yaml
           # Replace image tag in deployment.yaml with new Docker image tagged by commit SHA
-          sed -i "s+${{ secrets.DOCKERHUB_USERNAME }}/my-app.*+${{ secrets.DOCKERHUB_USERNAME }}/my-app:${{ github.sha }}+g" manifest/deployment.yaml
+          sed -i "s+${{ secrets.DOCKERHUB_USERNAME }}/my-app.*+${{ secrets.DOCKERHUB_USERNAME }}/my-app:${{ github.sha }}+g" db-test/deploy.yaml
           cat db-test/deploy.yaml
         # Updates Kubernetes manifest to use the new image
 
