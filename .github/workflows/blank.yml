@@ -56,8 +56,8 @@ jobs:
           git config user.name "${{ secrets.GIT_USERNAME }}"
           git config user.email "${{ secrets.GIT_EMAIL }}"
           git fetch origin
-          git checkout main
-          git pull origin main
+          git checkout appset
+          git pull origin appset
           # Show current directory and deployment file content (for debugging)
           pwd
           cat db-test/deploy.yaml
@@ -72,8 +72,8 @@ jobs:
           git config user.email "${{ secrets.GIT_EMAIL }}"
           git remote set-url origin https://$GIT_USERNAME:$PERSONAL_ACCESS_TOKEN@github.com/${{ github.repository }}.git
           git fetch origin
-          git checkout main
-          git pull origin main
+          git checkout appset
+          git pull origin appset
           git add .
           git commit -m "Update image to my-app:${{ github.sha }}"
-          git push origin main
+          git push origin appset
