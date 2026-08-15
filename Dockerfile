@@ -1,1 +1,1 @@
-FROM nginx:latest #this image from nginx 
+FROM nginx:latest 
